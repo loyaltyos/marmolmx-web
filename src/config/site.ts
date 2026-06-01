@@ -1,8 +1,8 @@
 export const SITE_CONFIG = {
   businessEmail: "info@marmolmx.com.mx",
   salesEmail: "ventas@marmolmx.com.mx",
-  businessPhone: "+52 984 123 4567",
-  whatsappNumber: "529841234567",
+  businessPhone: "+52 55 7332 8442",
+  whatsappNumber: "525573328442",
   domain: "https://marmolmx.com.mx",
   businessLocation: "Álvaro Obregón, Ciudad de México",
   serviceArea: "México",
