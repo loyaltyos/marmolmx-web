@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   let chargeWasApproved = false;
 
   try {
-    const validation = validateRequest((await request.json()) as ChargeRequest);
+    const validation = validateRequest(await request.json());
 
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
@@ -204,12 +204,34 @@ export async function POST(request: Request) {
   }
 }
 
-function validateRequest(body: ChargeRequest) {
+function validateRequest(body: unknown) {
+  if (!isRecord(body)) {
+    return { ok: false as const, error: "La solicitud de pago no es válida." };
+  }
+
+  const allowedFields = new Set([
+    "order_id",
+    "token_id",
+    "device_session_id",
+  ]);
+  const unexpectedFields = Object.keys(body).filter(
+    (field) => !allowedFields.has(field),
+  );
+
+  if (unexpectedFields.length) {
+    return {
+      ok: false as const,
+      error: "La solicitud de pago contiene campos no permitidos.",
+    };
+  }
+
+  const request = body as ChargeRequest;
   const orderId = typeof body.order_id === "string" ? body.order_id.trim() : "";
-  const tokenId = typeof body.token_id === "string" ? body.token_id.trim() : "";
+  const tokenId =
+    typeof request.token_id === "string" ? request.token_id.trim() : "";
   const deviceSessionId =
-    typeof body.device_session_id === "string"
-      ? body.device_session_id.trim()
+    typeof request.device_session_id === "string"
+      ? request.device_session_id.trim()
       : "";
 
   if (!uuidPattern.test(orderId)) {
@@ -225,6 +247,10 @@ function validateRequest(body: ChargeRequest) {
   }
 
   return { ok: true as const, orderId, tokenId, deviceSessionId };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function calculateSecureTotal(items: PersistedItem[]) {
@@ -248,27 +274,17 @@ async function persistApprovedPayment(
   result: OpenPayResult,
 ) {
   const supabase = createSupabaseServerClient();
-  const { error: paymentError } = await supabase.from("payments").insert({
-    order_id: orderId,
-    provider: "openpay",
-    provider_payment_id: result.id || null,
-    provider_status: result.status || "completed",
-    amount,
-    currency: "MXN",
-    raw_response: result,
+  const { error } = await supabase.rpc("record_openpay_payment", {
+    p_order_id: orderId,
+    p_provider_payment_id: result.id || null,
+    p_provider_status: result.status || "completed",
+    p_amount: amount,
+    p_currency: "MXN",
+    p_raw_response: result,
   });
 
-  if (paymentError) {
-    throw new Error("No fue posible guardar el pago aprobado.");
-  }
-
-  const { error: orderError } = await supabase
-    .from("orders")
-    .update({ status: "paid", updated_at: new Date().toISOString() })
-    .eq("id", orderId);
-
-  if (orderError) {
-    throw new Error("No fue posible actualizar la orden pagada.");
+  if (error) {
+    throw new Error("No fue posible registrar el pago aprobado.");
   }
 }
 

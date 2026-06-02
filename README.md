@@ -63,6 +63,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 
 La tarjeta se tokeniza directamente con OpenPay.js. El servidor recibe únicamente `order_id`, `token_id` y `device_session_id`.
 
+El esquema incluye `record_openpay_payment`, una función transaccional que registra el pago aprobado con proveedor `openpay` y actualiza la orden a `paid` en la misma operación.
+
 ## Antes de producción
 
 Reemplaza las credenciales Sandbox por las credenciales de producción:

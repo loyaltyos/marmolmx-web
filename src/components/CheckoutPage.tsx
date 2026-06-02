@@ -57,11 +57,12 @@ export function CheckoutPage() {
   const [isOpenPayReady, setIsOpenPayReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [demoOrder, setDemoOrder] = useState("");
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
   const cardBrand = detectCardBrand(form.cardNumber);
   const formattedCardNumber = formatCardNumber(form.cardNumber, cardBrand);
   const cvvMaxLength = cardBrand === "amex" ? 4 : 3;
+  const isOpenPaySandbox =
+    process.env.NEXT_PUBLIC_OPENPAY_SANDBOX !== "false";
 
   const configureOpenPay = useCallback(() => {
     const openPay = window.OpenPay;
@@ -79,15 +80,26 @@ export function CheckoutPage() {
       process.env.NEXT_PUBLIC_OPENPAY_SANDBOX !== "false",
     );
 
-    if (!deviceSessionId && document.getElementById("payment-form")) {
-      const sessionId = openPay.deviceData?.setup(
-        "payment-form",
-        "device_session_id",
-      );
-      if (sessionId) {
-        setDeviceSessionId(sessionId);
-      }
+    const paymentForm = document.getElementById("payment-form");
+    const existingSessionId = (
+      document.getElementById("device_session_id") as HTMLInputElement | null
+    )?.value;
+    const sessionId =
+      deviceSessionId ||
+      existingSessionId ||
+      (paymentForm
+        ? openPay.deviceData?.setup("payment-form", "device_session_id")
+        : "");
+
+    if (!sessionId) {
+      setIsOpenPayReady(false);
+      return;
     }
+
+    if (sessionId !== deviceSessionId) {
+      setDeviceSessionId(sessionId);
+    }
+
     setIsOpenPayReady(true);
   }, [deviceSessionId]);
 
@@ -183,21 +195,26 @@ export function CheckoutPage() {
       return;
     }
 
-    if (isOpenPayReady) {
-      const validationErrors = validatePaymentFields(form, cardBrand);
-      setPaymentErrors(validationErrors);
+    if (!isOpenPayReady) {
+      setError(
+        "OpenPay no está disponible o la protección antifraude no pudo inicializarse. Recarga la página e intenta nuevamente.",
+      );
+      return;
+    }
 
-      if (Object.keys(validationErrors).length) {
-        setError("Revisa los datos de la tarjeta antes de continuar.");
-        return;
-      }
+    const validationErrors = validatePaymentFields(form, cardBrand);
+    setPaymentErrors(validationErrors);
 
-      if (!deviceSessionId) {
-        setError(
-          "No fue posible iniciar la protección antifraude de OpenPay. Recarga la página e intenta nuevamente.",
-        );
-        return;
-      }
+    if (Object.keys(validationErrors).length) {
+      setError("Revisa los datos de la tarjeta antes de continuar.");
+      return;
+    }
+
+    if (!deviceSessionId) {
+      setError(
+        "No fue posible iniciar la protección antifraude de OpenPay. Recarga la página e intenta nuevamente.",
+      );
+      return;
     }
 
     setIsSubmitting(true);
@@ -229,11 +246,6 @@ export function CheckoutPage() {
 
       if (!orderResponse.ok || !order.order_id || !order.order_number) {
         throw new Error(order.error ?? "No fue posible crear la orden.");
-      }
-
-      if (!isOpenPayReady) {
-        setDemoOrder(order.order_number);
-        return;
       }
 
       const tokenId = await tokenizeCard();
@@ -321,8 +333,8 @@ export function CheckoutPage() {
             Finaliza tu solicitud
           </h1>
           <p className="mt-4 leading-7 text-[#5f656b]">
-            Completa tus datos y procesa el pago en el entorno seguro de OpenPay
-            Sandbox.
+            Completa tus datos y procesa el pago en el entorno seguro de
+            OpenPay{isOpenPaySandbox ? " Sandbox" : ""}.
           </p>
         </div>
 
@@ -352,12 +364,6 @@ export function CheckoutPage() {
             onSubmit={handleSubmit}
             className="grid gap-6 lg:grid-cols-[1fr_380px]"
           >
-            <input
-              type="hidden"
-              name="device_session_id"
-              value={deviceSessionId}
-              readOnly
-            />
             <div className="grid gap-6">
               <section className="border border-[#1F2933]/10 bg-white p-5 shadow-sm sm:p-7">
                 <h2 className="text-2xl font-semibold text-[#1F2933]">
@@ -517,17 +523,9 @@ export function CheckoutPage() {
                   {error}
                 </p>
               )}
-              {demoOrder && (
-                <p className="mt-4 rounded bg-[#F5F2EC] p-3 text-sm leading-6 text-[#0F2A3D]">
-                  Orden creada en modo demo. OpenPay pendiente de credenciales.
-                  <span className="mt-1 block font-semibold">
-                    Referencia: {demoOrder}
-                  </span>
-                </p>
-              )}
               <button
                 type="submit"
-                disabled={isSubmitting || Boolean(demoOrder)}
+                disabled={isSubmitting || !isOpenPayReady || !deviceSessionId}
                 className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-[#C66A2E] px-4 font-semibold text-white transition hover:bg-[#a95524] disabled:cursor-wait disabled:bg-[#A7A29A]"
               >
                 <LockKeyhole className="h-4 w-4" />
@@ -535,7 +533,7 @@ export function CheckoutPage() {
                   ? "Procesando pago seguro..."
                   : isOpenPayReady
                     ? "Pagar con OpenPay"
-                    : "Crear orden demo"}
+                    : "Inicializando OpenPay..."}
               </button>
               <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-[#5f656b]">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#C66A2E]" />
