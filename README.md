@@ -67,6 +67,8 @@ El esquema incluye `record_openpay_payment`, una función transaccional que regi
 
 Configura en OpenPay el webhook `POST /api/openpay/webhook`. El endpoint responde inmediatamente y registra el payload completo en `openpay_webhook_logs`. Para validar disponibilidad usa `GET /api/openpay/webhook-test`.
 
+Durante la verificación manual, define temporalmente `OPENPAY_WEBHOOK_DEBUG_TOKEN` y consulta `GET /api/openpay/webhook-debug?token=TU_TOKEN`. Elimina la variable y la ruta temporal después de verificar el webhook.
+
 ## Antes de producción
 
 Reemplaza las credenciales Sandbox por las credenciales de producción:

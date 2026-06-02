@@ -1,4 +1,4 @@
-import { after, NextResponse } from "next/server";
+import { after } from "next/server";
 import {
   createSupabaseServerClient,
   isSupabaseConfigured,
@@ -14,11 +14,14 @@ export async function POST(request: Request) {
     await processOpenPayWebhook(payload);
   });
 
-  return NextResponse.json({ status: "ok" });
+  return new Response(null, { status: 200 });
 }
 
 async function processOpenPayWebhook(payload: JsonRecord) {
-  const eventType = getString(payload.type) || "unknown";
+  const verificationCode =
+    getString(payload.verification_code) || getString(payload.challenge);
+  const eventType =
+    getString(payload.type) || (verificationCode ? "verification" : "unknown");
   const transaction = isRecord(payload.transaction)
     ? payload.transaction
     : null;
@@ -27,6 +30,10 @@ async function processOpenPayWebhook(payload: JsonRecord) {
     : null;
 
   console.info("OpenPay webhook received", payload);
+
+  if (verificationCode) {
+    console.info("OpenPay webhook verification code received:", verificationCode);
+  }
 
   if (!isSupabaseConfigured()) {
     console.error("OpenPay webhook skipped: Supabase is not configured.");
