@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
+import { SITE_URL } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Términos y condiciones",
   description: "Términos y condiciones de compra y contratación de MarmolMX.",
+  alternates: {
+    canonical: `${SITE_URL}/terminos-y-condiciones`,
+  },
 };
 
 export default function Page() {

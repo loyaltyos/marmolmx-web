@@ -13,12 +13,16 @@ import {
   CONTACT_EMAIL,
   CONTACT_PHONE,
   SALES_EMAIL,
+  SITE_URL,
 } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Revisión técnica OpenPay",
   description:
     "Información técnica de la integración de pagos con OpenPay en MarmolMX.",
+  alternates: {
+    canonical: `${SITE_URL}/openpay-certificacion`,
+  },
 };
 
 const safeguards = [

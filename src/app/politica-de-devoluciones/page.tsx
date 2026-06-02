@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
+import { SITE_URL } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Política de devoluciones",
   description: "Política de devoluciones y cancelaciones de MarmolMX.",
+  alternates: {
+    canonical: `${SITE_URL}/politica-de-devoluciones`,
+  },
 };
 
 export default function Page() {

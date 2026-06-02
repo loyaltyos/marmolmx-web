@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
+import { SITE_URL } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Envíos y entregas",
   description: "Información sobre envíos, entregas e instalaciones de MarmolMX.",
+  alternates: {
+    canonical: `${SITE_URL}/envios-y-entregas`,
+  },
 };
 
 export default function Page() {

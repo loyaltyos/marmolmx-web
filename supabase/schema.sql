@@ -89,6 +89,14 @@ begin
 end;
 $$;
 
+create table if not exists openpay_webhook_logs (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null,
+  provider_payment_id text,
+  payload jsonb not null,
+  created_at timestamptz default now()
+);
+
 create table if not exists contact_requests (
   id uuid primary key default gen_random_uuid(),
   full_name text not null,

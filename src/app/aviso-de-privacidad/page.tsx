@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
+import { SITE_URL } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Aviso de privacidad",
   description: "Aviso de privacidad para clientes y usuarios de MarmolMX.",
+  alternates: {
+    canonical: `${SITE_URL}/aviso-de-privacidad`,
+  },
 };
 
 export default function Page() {

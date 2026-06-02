@@ -65,6 +65,8 @@ La tarjeta se tokeniza directamente con OpenPay.js. El servidor recibe únicamen
 
 El esquema incluye `record_openpay_payment`, una función transaccional que registra el pago aprobado con proveedor `openpay` y actualiza la orden a `paid` en la misma operación.
 
+Configura en OpenPay el webhook `POST /api/openpay/webhook`. El endpoint responde inmediatamente y registra el payload completo en `openpay_webhook_logs`. Para validar disponibilidad usa `GET /api/openpay/webhook-test`.
+
 ## Antes de producción
 
 Reemplaza las credenciales Sandbox por las credenciales de producción:
