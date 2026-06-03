@@ -650,7 +650,32 @@ function CardNumberInput({
 }
 
 function PaymentTrustMarks() {
-  const cards = ["Visa", "Mastercard", "American Express"];
+  const paymentLogos = [
+    {
+      label: "Openpay",
+      alt: "Openpay",
+      src: "/payment-logos/openpay-logo.png",
+      className: "h-8 w-28",
+    },
+    {
+      label: "Visa",
+      alt: "Visa",
+      src: "/payment-logos/visa.svg",
+      className: "h-8 w-20",
+    },
+    {
+      label: "Mastercard",
+      alt: "Mastercard",
+      src: "/payment-logos/mastercard.svg",
+      className: "h-8 w-24",
+    },
+    {
+      label: "American Express",
+      alt: "American Express",
+      src: "/payment-logos/american-express.svg",
+      className: "h-8 w-24",
+    },
+  ];
   const banks = [
     "BBVA",
     "Citibanamex",
@@ -662,33 +687,58 @@ function PaymentTrustMarks() {
 
   return (
     <div className="mt-5 rounded-lg border border-[#1F2933]/10 bg-[#F5F2EC] p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded bg-white px-3 py-1.5 text-sm font-bold text-[#0F2A3D] shadow-sm">
-          Openpay
-        </span>
-        {cards.map((card) => (
-          <span
-            key={card}
-            className="rounded border border-[#1F2933]/10 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.08em] text-[#1F2933]"
-          >
-            {card}
-          </span>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {paymentLogos.map((logo) => (
+          <PaymentLogoTile key={logo.label} {...logo} />
         ))}
       </div>
       <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#C66A2E]">
         Bancos participantes
       </p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {banks.map((bank) => (
           <span
             key={bank}
-            className="rounded-full border border-[#1F2933]/10 bg-white px-3 py-1 text-xs font-semibold text-[#5f656b]"
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-[#1F2933]/10 bg-white px-3 py-2 text-center text-xs font-bold text-[#5f656b] shadow-sm"
           >
             {bank}
           </span>
         ))}
       </div>
     </div>
+  );
+}
+
+function PaymentLogoTile({
+  label,
+  alt,
+  src,
+  className,
+}: {
+  label: string;
+  alt: string;
+  src: string;
+  className: string;
+}) {
+  const [hasImageError, setHasImageError] = useState(false);
+
+  return (
+    <span className="inline-flex min-h-16 items-center justify-center rounded-lg border border-[#1F2933]/10 bg-white px-3 py-2 shadow-sm">
+      {hasImageError ? (
+        <span className="text-center text-xs font-bold uppercase tracking-[0.08em] text-[#1F2933]">
+          {label}
+        </span>
+      ) : (
+        <Image
+          src={src}
+          alt={alt}
+          width={160}
+          height={64}
+          className={`${className} object-contain`}
+          onError={() => setHasImageError(true)}
+        />
+      )}
+    </span>
   );
 }
 
