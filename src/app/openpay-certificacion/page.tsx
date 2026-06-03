@@ -12,6 +12,7 @@ import { Footer } from "@/components/Footer";
 import {
   CONTACT_EMAIL,
   CONTACT_PHONE,
+  BUSINESS_LOCATION,
   SALES_EMAIL,
   SITE_URL,
 } from "@/config/site";
@@ -60,6 +61,17 @@ const reviewLinks = [
   ["Política de devoluciones", "/politica-de-devoluciones"],
   ["Envíos y entregas", "/envios-y-entregas"],
   ["Contacto", "/#contacto"],
+];
+
+const certificationChecklist = [
+  "SSL activo",
+  "Tokenización con OpenPay.js",
+  "Antifraude device_session_id",
+  "3D Secure",
+  "Webhook verificado",
+  "Políticas legales",
+  "Contacto visible",
+  "Logos Openpay/tarjetas/bancos visibles",
 ];
 
 export default function Page() {
@@ -131,6 +143,23 @@ export default function Page() {
 
             <section className="mt-8 border border-[#1F2933]/10 bg-white p-6 shadow-sm sm:p-8">
               <h2 className="text-2xl font-semibold text-[#1F2933]">
+                Checklist para certificación
+              </h2>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {certificationChecklist.map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 border border-[#1F2933]/10 bg-[#F5F2EC] px-4 py-3 text-sm font-semibold text-[#1F2933]"
+                  >
+                    <BadgeCheck className="h-5 w-5 shrink-0 text-[#C66A2E]" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-8 border border-[#1F2933]/10 bg-white p-6 shadow-sm sm:p-8">
+              <h2 className="text-2xl font-semibold text-[#1F2933]">
                 Elementos disponibles para revisión
               </h2>
               <p className="mt-3 max-w-3xl leading-7 text-[#5f656b]">
@@ -169,6 +198,7 @@ export default function Page() {
                 >
                   {SALES_EMAIL}
                 </a>
+                <p>{BUSINESS_LOCATION}</p>
               </div>
             </section>
           </div>

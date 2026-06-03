@@ -3,21 +3,19 @@ import {
   createSupabaseServerClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/server";
+import {
+  GENERIC_PAYMENT_DECLINE_MESSAGE,
+  getOpenPayApiOrigin,
+  getOpenPayAuthHeader,
+  getOpenPayCredentials,
+  type OpenPayCharge,
+} from "@/lib/openpay/server";
+import { SITE_URL } from "@/config/site";
 
 type ChargeRequest = {
   order_id?: unknown;
   token_id?: unknown;
   device_session_id?: unknown;
-};
-
-type OpenPayResult = {
-  id?: string;
-  status?: string;
-  authorization?: string;
-  description?: string;
-  error_code?: number;
-  category?: string;
-  request_id?: string;
 };
 
 type PersistedOrder = {
@@ -63,10 +61,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const merchantId = process.env.NEXT_PUBLIC_OPENPAY_MERCHANT_ID;
-    const privateKey = process.env.OPENPAY_PRIVATE_KEY;
+    const credentials = getOpenPayCredentials();
 
-    if (!merchantId || !privateKey) {
+    if (!credentials) {
       return NextResponse.json(
         { error: "OpenPay no está configurado en el servidor." },
         { status: 503 },
@@ -125,19 +122,15 @@ export async function POST(request: Request) {
       throw new Error("El total seguro de la orden no es válido.");
     }
 
-    const apiOrigin =
-      process.env.OPENPAY_SANDBOX === "false"
-        ? "https://api.openpay.mx"
-        : "https://sandbox-api.openpay.mx";
     const names = splitCustomerName(customer.full_name);
     const openPayResponse = await fetch(
-      `${apiOrigin}/v1/${encodeURIComponent(merchantId)}/charges`,
+      `${getOpenPayApiOrigin()}/v1/${encodeURIComponent(
+        credentials.merchantId,
+      )}/charges`,
       {
         method: "POST",
         headers: {
-          Authorization: `Basic ${Buffer.from(`${privateKey}:`).toString(
-            "base64",
-          )}`,
+          Authorization: getOpenPayAuthHeader(credentials.privateKey),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -148,6 +141,10 @@ export async function POST(request: Request) {
           description: `Orden MarmolMX ${order.order_number}`,
           order_id: order.order_number,
           device_session_id: validation.deviceSessionId,
+          use_3d_secure: true,
+          redirect_url: `${SITE_URL}/checkout/3ds-return?orderNumber=${encodeURIComponent(
+            order.order_number,
+          )}`,
           customer: {
             name: names.firstName,
             last_name: names.lastName,
@@ -158,18 +155,41 @@ export async function POST(request: Request) {
         cache: "no-store",
       },
     );
-    const openPayResult = (await openPayResponse.json()) as OpenPayResult;
+    const openPayResult = (await openPayResponse.json()) as OpenPayCharge;
 
     if (!openPayResponse.ok) {
+      console.error("OpenPay charge failed:", openPayResult);
       await persistFailedPayment(order.id, secureTotal, openPayResult);
 
       return NextResponse.json(
-        {
-          error:
-            "No pudimos procesar el pago. Verifica los datos o intenta con otra tarjeta.",
-          error_code: openPayResult.error_code,
-        },
+        { error: GENERIC_PAYMENT_DECLINE_MESSAGE },
         { status: openPayResponse.status },
+      );
+    }
+
+    if (
+      openPayResult.status === "charge_pending" &&
+      openPayResult.payment_method?.type === "redirect" &&
+      openPayResult.payment_method.url
+    ) {
+      await persistPending3dsPayment(order.id, secureTotal, openPayResult);
+
+      return NextResponse.json({
+        requires_redirect: true,
+        redirect_url: openPayResult.payment_method.url,
+        order_number: order.order_number,
+      });
+    }
+
+    if (openPayResult.status !== "completed") {
+      await persistPending3dsPayment(order.id, secureTotal, openPayResult);
+
+      return NextResponse.json(
+        {
+          status: openPayResult.status || "charge_pending",
+          order_number: order.order_number,
+        },
+        { status: 202 },
       );
     }
 
@@ -195,10 +215,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      {
-        error:
-          "No pudimos procesar el pago. Verifica los datos o intenta con otra tarjeta.",
-      },
+      { error: GENERIC_PAYMENT_DECLINE_MESSAGE },
       { status: 500 },
     );
   }
@@ -271,7 +288,7 @@ function splitCustomerName(fullName: string) {
 async function persistApprovedPayment(
   orderId: string,
   amount: number,
-  result: OpenPayResult,
+  result: OpenPayCharge,
 ) {
   const supabase = createSupabaseServerClient();
   const { error } = await supabase.rpc("record_openpay_payment", {
@@ -288,10 +305,40 @@ async function persistApprovedPayment(
   }
 }
 
+async function persistPending3dsPayment(
+  orderId: string,
+  amount: number,
+  result: OpenPayCharge,
+) {
+  const supabase = createSupabaseServerClient();
+  const { error: paymentError } = await supabase.from("payments").insert({
+    order_id: orderId,
+    provider: "openpay",
+    provider_payment_id: result.id || null,
+    provider_status: "charge_pending",
+    amount,
+    currency: "MXN",
+    raw_response: result,
+  });
+
+  if (paymentError) {
+    throw new Error("No fue posible guardar el pago pendiente de 3D Secure.");
+  }
+
+  const { error: orderError } = await supabase
+    .from("orders")
+    .update({ status: "pending_3ds", updated_at: new Date().toISOString() })
+    .eq("id", orderId);
+
+  if (orderError) {
+    throw new Error("No fue posible actualizar la orden pendiente de 3D Secure.");
+  }
+}
+
 async function persistFailedPayment(
   orderId: string,
   amount: number,
-  result: OpenPayResult,
+  result: OpenPayCharge,
 ) {
   try {
     const supabase = createSupabaseServerClient();
@@ -316,7 +363,7 @@ async function persistFailedPayment(
   }
 }
 
-function sanitizeOpenPayError(result: OpenPayResult) {
+function sanitizeOpenPayError(result: OpenPayCharge) {
   return {
     category: result.category,
     description: result.description,

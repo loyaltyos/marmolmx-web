@@ -9,17 +9,27 @@ type JsonRecord = Record<string, unknown>;
 export async function POST(request: Request) {
   const rawPayload = await request.text();
   const payload = parsePayload(rawPayload);
+  const verificationCode =
+    getString(payload.verification_code) ||
+    getString(payload.challenge) ||
+    getString(payload.code);
 
   after(async () => {
     await processOpenPayWebhook(payload);
   });
+
+  if (verificationCode) {
+    return new Response(verificationCode, { status: 200 });
+  }
 
   return new Response(null, { status: 200 });
 }
 
 async function processOpenPayWebhook(payload: JsonRecord) {
   const verificationCode =
-    getString(payload.verification_code) || getString(payload.challenge);
+    getString(payload.verification_code) ||
+    getString(payload.challenge) ||
+    getString(payload.code);
   const eventType =
     getString(payload.type) || (verificationCode ? "verification" : "unknown");
   const transaction = isRecord(payload.transaction)
@@ -54,11 +64,13 @@ async function processOpenPayWebhook(payload: JsonRecord) {
   }
 
   const paymentStatus =
-    eventType === "charge.succeeded"
+    eventType === "charge.succeeded" || eventType === "charge.completed"
       ? "completed"
       : eventType === "charge.failed"
         ? "failed"
-        : null;
+        : eventType === "charge.cancelled"
+          ? "cancelled"
+          : null;
 
   if (!paymentStatus || !providerPaymentId) {
     return;

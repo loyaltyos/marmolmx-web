@@ -24,7 +24,7 @@ const footerServices = [
 const legalLinks = [
   ["Términos y condiciones", "/terminos-y-condiciones"],
   ["Aviso de privacidad", "/aviso-de-privacidad"],
-  ["Política de devoluciones", "/politica-de-devoluciones"],
+  ["Devoluciones y cancelaciones", "/politica-de-devoluciones"],
   ["Envíos y entregas", "/envios-y-entregas"],
 ];
 

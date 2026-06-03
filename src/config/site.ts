@@ -3,7 +3,7 @@ export const SITE_CONFIG = {
   salesEmail: "ventas@marmolmx.com.mx",
   businessPhone: "+52 55 7332 8442",
   whatsappNumber: "525573328442",
-  domain: "https://www.marmolmx.com.mx",
+  domain: process.env.NEXT_PUBLIC_SITE_URL || "https://www.marmolmx.com.mx",
   businessLocation: "Álvaro Obregón, Ciudad de México",
   serviceArea: "México",
 } as const;

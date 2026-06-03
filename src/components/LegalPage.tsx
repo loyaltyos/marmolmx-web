@@ -14,6 +14,10 @@ export type LegalSection = {
   title: string;
   paragraphs?: string[];
   items?: string[];
+  rows?: Array<{
+    label: string;
+    value: string;
+  }>;
 };
 
 export function LegalPage({
@@ -107,6 +111,27 @@ export function LegalPage({
                       </li>
                     ))}
                   </ul>
+                )}
+                {section.rows && (
+                  <div className="mt-5 overflow-hidden border border-[#1F2933]/10">
+                    <table className="w-full border-collapse text-left text-sm">
+                      <tbody>
+                        {section.rows.map((row) => (
+                          <tr
+                            key={row.label}
+                            className="border-b border-[#1F2933]/10 last:border-b-0"
+                          >
+                            <th className="w-1/2 bg-[#F5F2EC] px-4 py-3 font-semibold text-[#1F2933]">
+                              {row.label}
+                            </th>
+                            <td className="px-4 py-3 leading-6 text-[#5f656b]">
+                              {row.value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </article>
             ))}

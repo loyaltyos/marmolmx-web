@@ -15,6 +15,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useCart } from "./CartProvider";
 
+const GENERIC_PAYMENT_DECLINE_MESSAGE =
+  "Tarjeta declinada. Intenta con otro método de pago o comunícate con tu banco.";
+
 const mxn = new Intl.NumberFormat("es-MX", {
   style: "currency",
   currency: "MXN",
@@ -56,6 +59,7 @@ export function CheckoutPage() {
   const [deviceSessionId, setDeviceSessionId] = useState("");
   const [isOpenPayReady, setIsOpenPayReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting3ds, setIsRedirecting3ds] = useState(false);
   const [error, setError] = useState("");
   const [paymentErrors, setPaymentErrors] = useState<Record<string, string>>({});
   const cardBrand = detectCardBrand(form.cardNumber);
@@ -142,13 +146,13 @@ export function CheckoutPage() {
   };
 
   const updateExpirationYear = (value: string) => {
-    const digits = onlyDigits(value).slice(0, 4);
+    const digits = onlyDigits(value).slice(0, 2);
     setForm((current) => ({ ...current, expirationYear: digits }));
     setPaymentErrors((current) => ({
       ...current,
       expirationYear:
-        digits && digits.length !== 2 && digits.length !== 4
-          ? "Usa 2 o 4 dígitos."
+        digits && digits.length !== 2
+          ? "Usa 2 dígitos."
           : "",
     }));
   };
@@ -162,7 +166,7 @@ export function CheckoutPage() {
   const tokenizeCard = () =>
     new Promise<string>((resolve, reject) => {
       if (!window.OpenPay) {
-        reject(new Error("OpenPay.js aún no está disponible."));
+        reject(new Error(GENERIC_PAYMENT_DECLINE_MESSAGE));
         return;
       }
 
@@ -175,14 +179,7 @@ export function CheckoutPage() {
           cvv2: form.cvv2,
         },
         (response) => resolve(response.data.id),
-        (response) =>
-          reject(
-            new Error(
-              response.data?.description ??
-                response.message ??
-                "No fue posible validar la tarjeta.",
-            ),
-          ),
+        () => reject(new Error(GENERIC_PAYMENT_DECLINE_MESSAGE)),
       );
     });
 
@@ -218,6 +215,7 @@ export function CheckoutPage() {
     }
 
     setIsSubmitting(true);
+    let redirectingTo3ds = false;
 
     try {
       const orderResponse = await fetch("/api/orders", {
@@ -262,11 +260,20 @@ export function CheckoutPage() {
         success?: boolean;
         transaction_id?: string;
         order_number?: string;
+        requires_redirect?: boolean;
+        redirect_url?: string;
         error?: string;
       };
 
+      if (result.requires_redirect && result.redirect_url) {
+        redirectingTo3ds = true;
+        setIsRedirecting3ds(true);
+        window.location.href = result.redirect_url;
+        return;
+      }
+
       if (!response.ok || !result.success) {
-        throw new Error(result.error ?? "El pago no pudo completarse.");
+        throw new Error(result.error ?? GENERIC_PAYMENT_DECLINE_MESSAGE);
       }
 
       router.push(
@@ -278,10 +285,12 @@ export function CheckoutPage() {
       setError(
         caughtError instanceof Error
           ? caughtError.message
-          : "No fue posible procesar el pago. Intenta nuevamente.",
+          : GENERIC_PAYMENT_DECLINE_MESSAGE,
       );
     } finally {
-      setIsSubmitting(false);
+      if (!redirectingTo3ds) {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -415,9 +424,10 @@ export function CheckoutPage() {
                   </h2>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-[#5f656b]">
-                  Tus datos bancarios se tokenizan de forma segura con OpenPay.
-                  MarmolMX no almacena información de tarjeta.
+                  Tus datos de tarjeta se tokenizan directamente con Openpay y
+                  no son almacenados por MarmolMX.
                 </p>
+                <PaymentTrustMarks />
                 <CardPreview
                   brand={cardBrand}
                   cardNumber={form.cardNumber}
@@ -458,8 +468,8 @@ export function CheckoutPage() {
                     onChange={updateExpirationYear}
                     autoComplete="cc-exp-year"
                     inputMode="numeric"
-                    maxLength={4}
-                    placeholder="AA o AAAA"
+                    maxLength={2}
+                    placeholder="AA"
                     error={paymentErrors.expirationYear}
                   />
                   <CheckoutInput
@@ -476,11 +486,13 @@ export function CheckoutPage() {
                 <p className="mt-5 flex items-start gap-2 border-t border-[#1F2933]/10 pt-4 text-xs leading-5 text-[#5f656b]">
                   <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#C66A2E]" />
                   <span>
-                    Tus datos de tarjeta se tokenizan directamente con OpenPay.
+                    Pagos procesados de forma segura mediante Openpay.
                     <br />
-                    MarmolMX no almacena datos bancarios.
+                    Tus datos de tarjeta se tokenizan directamente con Openpay y
+                    no son almacenados por MarmolMX.
                     <br />
-                    Transacción protegida con sistema antifraude OpenPay.
+                    Transacción protegida con sistema antifraude OpenPay y 3D
+                    Secure.
                   </span>
                 </p>
               </section>
@@ -525,11 +537,18 @@ export function CheckoutPage() {
               )}
               <button
                 type="submit"
-                disabled={isSubmitting || !isOpenPayReady || !deviceSessionId}
+                disabled={
+                  isSubmitting ||
+                  isRedirecting3ds ||
+                  !isOpenPayReady ||
+                  !deviceSessionId
+                }
                 className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 bg-[#C66A2E] px-4 font-semibold text-white transition hover:bg-[#a95524] disabled:cursor-wait disabled:bg-[#A7A29A]"
               >
                 <LockKeyhole className="h-4 w-4" />
-                {isSubmitting
+                {isRedirecting3ds
+                  ? "Redirigiendo a autenticación bancaria segura..."
+                  : isSubmitting
                   ? "Procesando pago seguro..."
                   : isOpenPayReady
                     ? "Pagar con OpenPay"
@@ -627,6 +646,49 @@ function CardNumberInput({
       </div>
       {error && <span className="text-xs font-medium text-red-600">{error}</span>}
     </label>
+  );
+}
+
+function PaymentTrustMarks() {
+  const cards = ["Visa", "Mastercard", "American Express"];
+  const banks = [
+    "BBVA",
+    "Citibanamex",
+    "Santander",
+    "Banorte",
+    "HSBC",
+    "Scotiabank",
+  ];
+
+  return (
+    <div className="mt-5 rounded-lg border border-[#1F2933]/10 bg-[#F5F2EC] p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="rounded bg-white px-3 py-1.5 text-sm font-bold text-[#0F2A3D] shadow-sm">
+          Openpay
+        </span>
+        {cards.map((card) => (
+          <span
+            key={card}
+            className="rounded border border-[#1F2933]/10 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[0.08em] text-[#1F2933]"
+          >
+            {card}
+          </span>
+        ))}
+      </div>
+      <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#C66A2E]">
+        Bancos participantes
+      </p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {banks.map((bank) => (
+          <span
+            key={bank}
+            className="rounded-full border border-[#1F2933]/10 bg-white px-3 py-1 text-xs font-semibold text-[#5f656b]"
+          >
+            {bank}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -777,11 +839,8 @@ function validatePaymentFields(form: CheckoutForm, brand: CardBrand) {
     errors.expirationMonth = "Ingresa un mes entre 01 y 12.";
   }
 
-  if (
-    form.expirationYear.length !== 2 &&
-    form.expirationYear.length !== 4
-  ) {
-    errors.expirationYear = "Usa 2 o 4 dígitos.";
+  if (form.expirationYear.length !== 2) {
+    errors.expirationYear = "Usa 2 dígitos.";
   }
 
   if (form.cvv2.length !== cvvLength) {
