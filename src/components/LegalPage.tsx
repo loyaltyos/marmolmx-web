@@ -156,7 +156,7 @@ export function LegalPage({
                 >
                   {SALES_EMAIL}
                 </a>
-                .
+                . Dirección fiscal: {BUSINESS_LOCATION}.
               </p>
             </div>
           </div>

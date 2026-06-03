@@ -23,6 +23,7 @@ export default function Page() {
             "Atendemos solicitudes en México. La disponibilidad, costo logístico y tiempos de entrega se confirman individualmente según ubicación, características del producto, volumen, peso, maquinaria requerida y condiciones de cada orden.",
             "Los costos de entrega, maniobra e instalación se cotizan de acuerdo con la zona de entrega, dimensiones del producto, peso, accesibilidad del domicilio y alcance del proyecto.",
             "El costo de envío no siempre está incluido en el precio del producto. Cada entrega se cotiza de forma previa y transparente cuando requiere flete, maniobra, embalaje, traslado especializado o coordinación foránea.",
+            "Cuando una orden sea pagada con tarjeta, la transacción se procesa mediante Openpay; la programación de entrega se confirma conforme al estatus de pago, disponibilidad y validación logística.",
           ],
         },
         {
