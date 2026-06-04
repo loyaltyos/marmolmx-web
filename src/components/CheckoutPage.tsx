@@ -194,7 +194,7 @@ export function CheckoutPage() {
 
     if (!isOpenPayReady) {
       setError(
-        "OpenPay no está disponible o la protección antifraude no pudo inicializarse. Recarga la página e intenta nuevamente.",
+        "Openpay no está disponible o la protección antifraude no pudo inicializarse. Recarga la página e intenta nuevamente.",
       );
       return;
     }
@@ -209,7 +209,7 @@ export function CheckoutPage() {
 
     if (!deviceSessionId) {
       setError(
-        "No fue posible iniciar la protección antifraude de OpenPay. Recarga la página e intenta nuevamente.",
+        "No fue posible iniciar la protección antifraude de Openpay. Recarga la página e intenta nuevamente.",
       );
       return;
     }
@@ -343,7 +343,7 @@ export function CheckoutPage() {
           </h1>
           <p className="mt-4 leading-7 text-[#5f656b]">
             Completa tus datos y procesa el pago en el entorno seguro de
-            OpenPay{isOpenPaySandbox ? " Sandbox" : ""}.
+            Openpay{isOpenPaySandbox ? " Sandbox" : ""}.
           </p>
         </div>
 
@@ -491,7 +491,7 @@ export function CheckoutPage() {
                     Tus datos de tarjeta se tokenizan directamente con Openpay y
                     no son almacenados por MarmolMX.
                     <br />
-                    Transacción protegida con sistema antifraude OpenPay y 3D
+                    Transacción protegida con sistema antifraude Openpay y 3D
                     Secure.
                   </span>
                 </p>
@@ -551,12 +551,12 @@ export function CheckoutPage() {
                   : isSubmitting
                   ? "Procesando pago seguro..."
                   : isOpenPayReady
-                    ? "Pagar con OpenPay"
-                    : "Inicializando OpenPay..."}
+                    ? "Pagar con Openpay"
+                    : "Inicializando Openpay..."}
               </button>
               <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-[#5f656b]">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#C66A2E]" />
-                Transacción protegida con sistema antifraude OpenPay.
+                Transacción protegida con sistema antifraude Openpay.
               </p>
             </aside>
           </form>
@@ -653,9 +653,9 @@ function PaymentTrustMarks() {
   const paymentLogos = [
     {
       label: "Openpay",
-      alt: "Openpay",
-      src: "/payment-logos/openpay-logo.png",
-      className: "h-8 w-28",
+      alt: "Openpay by BBVA",
+      src: "/payment-logos/openpay-by-bbva.png",
+      className: "h-8 w-32",
     },
     {
       label: "Visa",
