@@ -104,7 +104,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10 px-4 py-6 text-center text-sm text-white/60">
-        © {new Date().getFullYear()} MarmolMX. Todos los derechos reservados.
+        © {new Date().getFullYear()} MarmolMX - Avenida Santa Fe 596, PB 5, Lomas de Santa Fe, 01219, CDMX. Todos los derechos reservados.
       </div>
     </footer>
   );
