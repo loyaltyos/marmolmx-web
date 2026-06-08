@@ -14,6 +14,35 @@ export type Product = {
 
 export const products: Product[] = [
   {
+    id: 100,
+    name: "Compra mínima de prueba",
+    category: "Prueba",
+    price: 100,
+    description:
+      "Producto temporal para validar pagos en producción Openpay.",
+    image:
+      "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=900&q=80&sat=-35",
+    slug: "compra-minima-de-prueba",
+    longDescription:
+      "Producto temporal para validar pagos en producción Openpay sin modificar el flujo normal de compra, carrito, creación de órdenes ni procesamiento seguro con Openpay.",
+    specifications: [
+      "Producto temporal de validación",
+      "Precio fijo de prueba",
+      "Pago procesado por Openpay",
+      "Disponible para checkout estándar",
+    ],
+    applications: [
+      "Validación de pago en producción",
+      "Prueba operativa de checkout",
+      "Confirmación de 3D Secure",
+    ],
+    benefits: [
+      "Monto mínimo controlado",
+      "Flujo de carrito normal",
+      "Validación sin exponer credenciales",
+    ],
+  },
+  {
     id: 1,
     name: "Mármol Carrara Premium",
     category: "Mármol",

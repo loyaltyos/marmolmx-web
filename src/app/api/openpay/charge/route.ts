@@ -5,7 +5,7 @@ import {
 } from "@/lib/supabase/server";
 import {
   GENERIC_PAYMENT_DECLINE_MESSAGE,
-  getOpenPayApiOrigin,
+  getOpenPayApiBaseUrl,
   getOpenPayAuthHeader,
   getOpenPayCredentials,
   type OpenPayCharge,
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
 
     const names = splitCustomerName(customer.full_name);
     const openPayResponse = await fetch(
-      `${getOpenPayApiOrigin()}/v1/${encodeURIComponent(
+      `${getOpenPayApiBaseUrl()}${encodeURIComponent(
         credentials.merchantId,
       )}/charges`,
       {

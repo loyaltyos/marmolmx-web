@@ -34,6 +34,10 @@ export function getOpenPayApiOrigin() {
     : "https://sandbox-api.openpay.mx";
 }
 
+export function getOpenPayApiBaseUrl() {
+  return `${getOpenPayApiOrigin()}/v1/`;
+}
+
 export function getOpenPayAuthHeader(privateKey: string) {
   return `Basic ${Buffer.from(`${privateKey}:`).toString("base64")}`;
 }
@@ -46,7 +50,7 @@ export async function fetchOpenPayCharge(chargeId: string) {
   }
 
   const response = await fetch(
-    `${getOpenPayApiOrigin()}/v1/${encodeURIComponent(
+    `${getOpenPayApiBaseUrl()}${encodeURIComponent(
       credentials.merchantId,
     )}/charges/${encodeURIComponent(chargeId)}`,
     {
